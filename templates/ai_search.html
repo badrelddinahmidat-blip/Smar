@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.ai_search }} - {{ t.app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-5 text-primary">
+                <i class="fas fa-robot me-3"></i>{{ t.ai_powered_search }}
+            </h1>
+            {% if user_logged_in %}
+                <span class="badge bg-success fs-6">
+                    <i class="fas fa-user me-1"></i>{{ session.first_name }} {{ session.last_name }}
+                </span>
+            {% endif %}
+        </div>
+        
+        <p class="lead text-muted mb-5">
+            {{ t.ask_anything }}
+        </p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- AI Search Form -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-gradient-primary text-white">
+                <h3 class="h5 mb-0">
+                    <i class="fas fa-search me-2"></i>{{ t.ask_ai_assistant }}
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <form id="aiSearchForm" method="POST">
+                    <div class="mb-3">
+                        <label for="query" class="form-label">
+                            <i class="fas fa-question-circle me-1"></i>{{ t.your_question }}
+                        </label>
+                        <textarea class="form-control" id="query" name="query" rows="3" 
+                                  placeholder="{{ t.ask_placeholder }}" 
+                                  required>{{ query if query else '' }}</textarea>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            {{ t.examples }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-outline-secondary me-md-2" onclick="clearForm()">
+                            <i class="fas fa-eraser me-1"></i>{{ t.clear }}
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg" id="searchBtn">
+                            <i class="fas fa-robot me-2"></i>{{ t.search_with_ai }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- AI Response Area -->
+        {% if ai_response %}
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h3 class="h5 mb-0">
+                    <i class="fas fa-brain me-2"></i>{{ t.ai_response }}
+                </h3>
+                <small class="text-light">Query: "{{ query }}"</small>
+            </div>
+            
+            <div class="card-body">
+                <div class="ai-response">
+                    {{ ai_response|replace('\n', '<br>')|safe }}
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        {{ t.powered_by_openai }}
+                    </small>
+                    <button class="btn btn-outline-primary btn-sm" onclick="copyResponse()">
+                        <i class="fas fa-copy me-1"></i>{{ t.copy_response }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Loading Spinner (Hidden by default) -->
+        <div id="loadingSpinner" class="card shadow" style="display: none;">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 class="text-muted">{{ t.ai_thinking }}</h5>
+                <p class="text-muted">{{ t.please_wait }}</p>
+            </div>
+        </div>
+        
+        <!-- Error Message Area -->
+        <div id="errorMessage" class="alert alert-danger" style="display: none;">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span id="errorText"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Questions Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>{{ t.quick_questions }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">{{ t.book_recommendations }}</h6>
+                        <ul class="list-unstyled">
+                            <li><button class="btn btn-link p-0 text-start" onclick="setQuery('Recommend a good mystery novel')">{{ t.mystery_novels }}</button></li>
+                            <li><button class="btn btn-link p-0 text-start" onclick="setQuery('What are some classic literature books?')">{{ t.classic_literature }}</button></li>
+                            <li><button class="btn btn-link p-0 text-start" onclick="setQuery('Suggest books about science fiction')">{{ t.science_fiction }}</button></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">{{ t.general_questions }}</h6>
+                        <ul class="list-unstyled">
+                            <li><button class="btn btn-link p-0 text-start" onclick="setQuery('What is the difference between fiction and non-fiction?')">{{ t.fiction_vs_nonfiction }}</button></li>
+                            <li><button class="btn btn-link p-0 text-start" onclick="setQuery('How to improve reading comprehension?')">{{ t.reading_tips }}</button></li>
+                            <li><button class="btn btn-link p-0 text-start" onclick="setQuery('What are the benefits of reading?')">{{ t.benefits_reading }}</button></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

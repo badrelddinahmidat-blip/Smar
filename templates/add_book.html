@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.add_book }} - {{ t.app_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h4 mb-0">
+                    <i class="fas fa-plus me-2"></i>{{ t.add_new_book }}
+                </h2>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="addBookForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-book me-1"></i>{{ t.book_title }} *
+                        </label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="{{ t.book_title }}" required>
+                        <div class="form-text">{{ t.book_title }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="author" class="form-label">
+                            <i class="fas fa-user me-1"></i>{{ t.author }} *
+                        </label>
+                        <input type="text" class="form-control" id="author" name="author" 
+                               placeholder="{{ t.author }}" required>
+                        <div class="form-text">{{ t.author }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>{{ t.description }}
+                        </label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="4" placeholder="{{ t.description }}"></textarea>
+                        <div class="form-text">{{ t.description }}</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="file" class="form-label">
+                            <i class="fas fa-file-pdf me-1"></i>{{ t.pdf_file }} *
+                        </label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".pdf" required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{ t.only_pdf_accepted }} {{ t.max_file_size }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="image" class="form-label">
+                            <i class="fas fa-image me-1"></i>{{ t.book_cover_image }}
+                        </label>
+                        <input type="file" class="form-control" id="image" name="image" 
+                               accept="image/png, image/jpeg, image/jpg, image/gif, image/webp">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{ t.image_guideline }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>{{ t.cancel }}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{{ t.save }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Upload Guidelines -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>{{ t.upload_guidelines }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-check text-success me-2"></i>{{ t.only_pdf_accepted }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>{{ t.max_file_size }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>{{ t.make_sure_readable }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>{{ t.provide_accurate_info }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>{{ t.image_guideline }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

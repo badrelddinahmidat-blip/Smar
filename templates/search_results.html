@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.search_results }} - {{ t.app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">{{ t.home }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ t.search_results }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-5 text-primary mb-4">
+            <i class="fas fa-search me-3"></i>{{ t.search_results }}
+        </h1>
+        
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>{{ t.search_query }}:</strong> "{{ query }}"
+            {% if books %}
+                <br><strong>{{ t.found }}:</strong> {{ books|length }} {{ t.book }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if books %}
+    <div class="row">
+        {% for book in books %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm book-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">
+                        <h5 class="card-title text-primary">{{ book.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            <i class="fas fa-user me-1"></i>{{ book.author }}
+                        </h6>
+                    </div>
+                    
+                    <p class="card-text flex-grow-1">
+                        {% if book.description %}
+                            {{ book.description[:150] }}{% if book.description|length > 150 %}...{% endif %}
+                        {% else %}
+                            <em class="text-muted">{{ t.no_description }}</em>
+                        {% endif %}
+                    </p>
+                    
+                    <div class="mt-auto">
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-calendar me-1"></i>
+                            {{ t.added_on }} {{ book.upload_date.split(' ')[0] }}
+                        </small>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('book_detail', book_id=book.id) }}" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>{{ t.view_details }}
+                            </a>
+                            <a href="{{ url_for('download_book', book_id=book.id) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-download me-1"></i>{{ t.download }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="row">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>{{ t.back_to_all_books }}
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-5x text-muted mb-4"></i>
+                <h3 class="text-muted">{{ t.no_books_found }}</h3>
+                <p class="text-muted mb-4">
+                    {{ t.no_books_found_message }} "{{ query }}". {{ t.try_different_search }}
+                </p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-list me-2"></i>{{ t.browse_all_books }}
+                    </a>
+                    <a href="{{ url_for('add_book') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>{{ t.add_new_book }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Search Again -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2"></i>{{ t.search_again }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('search') }}" method="GET">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input class="form-control form-control-lg" type="search" name="q" 
+                                   placeholder="{{ t.search_placeholder }}" 
+                                   value="{{ query }}" aria-label="Search">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary btn-lg w-100" type="submit">
+                                <i class="fas fa-search me-2"></i>{{ t.search }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

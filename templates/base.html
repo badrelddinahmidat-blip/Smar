@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="{{ lang_data.code }}" dir="{{ lang_data.dir }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ t.app_name }}{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body class="{{ lang_data.dir }}">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" dir="{{ lang_data.dir }}">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-book-open me-2"></i>{{ t.app_name }}
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav {% if lang_data.dir == 'rtl' %}me-auto{% else %}me-auto{% endif %}" dir="{{ lang_data.dir }}">
+                    {% if lang_data.dir == 'rtl' %}
+                        <!-- Arabic RTL order: Open Access Websites | Digital Repositories | Articles | Books | Home -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('open_access_websites') }}">
+                                <i class="fas fa-globe me-1"></i>{{ t.open_access_websites }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('digital_repositories') }}">
+                                <i class="fas fa-database me-1"></i>{{ t.digital_repositories }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('articles') }}">
+                                <i class="fas fa-newspaper me-1"></i>{{ t.articles }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('books') }}">
+                                <i class="fas fa-book me-1"></i>{{ t.books }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">
+                                <i class="fas fa-home me-1"></i>{{ t.home }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <!-- English LTR order: Home | Books | Articles | Digital Repositories | Open Access Websites -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">
+                                <i class="fas fa-home me-1"></i>{{ t.home }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('books') }}">
+                                <i class="fas fa-book me-1"></i>{{ t.books }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('articles') }}">
+                                <i class="fas fa-newspaper me-1"></i>{{ t.articles }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('digital_repositories') }}">
+                                <i class="fas fa-database me-1"></i>{{ t.digital_repositories }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('open_access_websites') }}">
+                                <i class="fas fa-globe me-1"></i>{{ t.open_access_websites }}
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav {% if lang_data.dir == 'rtl' %}ms-auto{% else %}ms-auto{% endif %}" dir="{{ lang_data.dir }}">
+                    {% if session.logged_in %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ session.first_name }} {{ session.last_name }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>{{ t.logout }}
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>{{ t.login }}
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <!-- Language Toggle -->
+                <div class="nav-item dropdown {% if lang_data.dir == 'rtl' %}me-3{% else %}me-3{% endif %}">
+                    <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-globe me-1"></i>{{ t.language }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('set_language', language='ar') }}">
+                            <i class="fas fa-flag me-2"></i>العربية
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('set_language', language='en') }}">
+                            <i class="fas fa-flag me-2"></i>English
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <!-- Search Form -->
+                <form class="d-flex" action="{{ url_for('search') }}" method="GET">
+                    <div class="input-group">
+                        <input class="form-control" type="search" name="q" placeholder="{{ t.search_placeholder }}" 
+                               value="{{ request.args.get('q', '') }}" aria-label="Search" dir="{{ lang_data.dir }}">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="container mt-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-4 mt-5">
+        <div class="container">
+            <p>&copy; 2024 {{ t.app_name }}. {{ t.built_with_flask }}</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

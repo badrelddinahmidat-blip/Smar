@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - {{ t.app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">{{ t.home }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ book.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-book me-2"></i>{{ book.title }}
+                </h1>
+            </div>
+            
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="text-muted">
+                            <i class="fas fa-user me-2"></i>{{ t.author }}
+                        </h5>
+                        <p class="h5">{{ book.author }}</p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="text-muted">
+                            <i class="fas fa-calendar me-2"></i>{{ t.added_on }}
+                        </h5>
+                        <p class="h6">{{ book.upload_date.split(' ')[0] }}</p>
+                    </div>
+                </div>
+                
+                {% if book.description %}
+                <hr>
+                <h5 class="text-muted">
+                    <i class="fas fa-align-left me-2"></i>{{ t.description }}
+                </h5>
+                <p class="lead">{{ book.description }}</p>
+                {% endif %}
+                
+                <hr>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{{ url_for('download_book', book_id=book.id) }}" 
+                       class="btn btn-primary btn-lg">
+                        <i class="fas fa-download me-2"></i>{{ t.download }}
+                    </a>
+                    <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#abstractModal" onclick="generateAbstract({{ book.id }})">
+                        <i class="fas fa-file-alt me-2"></i>{{ t.generate_abstract }}
+                    </button>
+                    <button type="button" class="btn btn-info btn-lg" data-bs-toggle="modal" data-bs-target="#annotationModal" onclick="generateAnnotation({{ book.id }})">
+                        <i class="fas fa-sticky-note me-2"></i>{{ t.generate_annotation }}
+                    </button>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>{{ t.home }}
+                    </a>
+                    <form action="{{ url_for('delete_book', book_id=book.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this book? This action cannot be undone.');">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-trash me-2"></i>{{ t.delete }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Book Info Card -->
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>{{ t.book_information }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>{{ t.book_title }}:</strong><br>
+                    <span class="text-muted">{{ book.title }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>{{ t.author }}:</strong><br>
+                    <span class="text-muted">{{ book.author }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>{{ t.pdf_file }}:</strong><br>
+                    <span class="text-muted">
+                        <i class="fas fa-file-pdf me-1"></i>{{ book.filename }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>{{ t.added_on }}:</strong><br>
+                    <span class="text-muted">{{ book.upload_date }}</span>
+                </div>
+                
+                {% if book.description %}
+                <div class="mb-3">
+                    <strong>{{ t.description }}:</strong><br>
+                    <span class="text-muted">{{ book.description }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>{{ t.quick_actions }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('download_book', book_id=book.id) }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-download me-2"></i>{{ t.download }}
+                    </a>
+                    <a href="{{ url_for('add_book') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>{{ t.add_book }}
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>{{ t.view_all_books }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Abstract Modal -->
+<div class="modal fade" id="abstractModal" tabindex="-1" aria-labelledby="abstractModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="abstractModalLabel">
+                    <i class="fas fa-file-alt me-2"></i>{{ t.abstract }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="abstractLoading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{{ t.generating_abstract }}</span>
+                    </div>
+                    <p class="mt-2">{{ t.generating_abstract }}</p>
+                </div>
+                <div id="abstractContent" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>{{ t.abstract_generated }}
+                    </div>
+                    <div id="abstractText" class="border p-3 rounded bg-light"></div>
+                </div>
+                <div id="abstractError" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t.cancel }}</button>
+                <button type="button" class="btn btn-primary" id="copyAbstractBtn" onclick="copyAbstract()" style="display: none;">
+                    <i class="fas fa-copy me-2"></i>{{ t.copy_response }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Annotation Modal -->
+<div class="modal fade" id="annotationModal" tabindex="-1" aria-labelledby="annotationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="annotationModalLabel">
+                    <i class="fas fa-sticky-note me-2"></i>{{ t.annotation }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="annotationLoading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">{{ t.generating_annotation }}</span>
+                    </div>
+                    <p class="mt-2">{{ t.generating_annotation }}</p>
+                </div>
+                <div id="annotationContent" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-check-circle me-2"></i>{{ t.annotation_generated }}
+                    </div>
+                    <div id="annotationText" class="border p-3 rounded bg-light"></div>
+                </div>
+                <div id="annotationError" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="annotationErrorMessage"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t.cancel }}</button>
+                <button type="button" class="btn btn-primary" id="copyAnnotationBtn" onclick="copyAnnotation()" style="display: none;">
+                    <i class="fas fa-copy me-2"></i>{{ t.copy_response }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateAbstract(bookId) {
+    // Show loading state
+    document.getElementById('abstractLoading').style.display = 'block';
+    document.getElementById('abstractContent').style.display = 'none';
+    document.getElementById('abstractError').style.display = 'none';
+    document.getElementById('copyAbstractBtn').style.display = 'none';
+    
+    // Make API call
+    fetch(`/generate_abstract/${bookId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('abstractLoading').style.display = 'none';
+        
+        if (data.success) {
+            document.getElementById('abstractText').innerHTML = data.abstract.replace(/\n/g, '<br>');
+            document.getElementById('abstractContent').style.display = 'block';
+            document.getElementById('copyAbstractBtn').style.display = 'inline-block';
+        } else {
+            document.getElementById('errorMessage').textContent = data.error;
+            document.getElementById('abstractError').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        document.getElementById('abstractLoading').style.display = 'none';
+        document.getElementById('errorMessage').textContent = '{{ t.error_generating_abstract }}: ' + error.message;
+        document.getElementById('abstractError').style.display = 'block';
+    });
+}
+
+function copyAbstract() {
+    const abstractText = document.getElementById('abstractText').textContent;
+    navigator.clipboard.writeText(abstractText).then(function() {
+        // Show success feedback
+        const btn = document.getElementById('copyAbstractBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>{{ t.copy_response }}';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    });
+}
+
+function generateAnnotation(bookId) {
+    // Show loading state
+    document.getElementById('annotationLoading').style.display = 'block';
+    document.getElementById('annotationContent').style.display = 'none';
+    document.getElementById('annotationError').style.display = 'none';
+    document.getElementById('copyAnnotationBtn').style.display = 'none';
+    
+    // Make API call
+    fetch(`/generate_annotation/${bookId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('annotationLoading').style.display = 'none';
+        
+        if (data.success) {
+            document.getElementById('annotationText').innerHTML = data.annotation.replace(/\n/g, '<br>');
+            document.getElementById('annotationContent').style.display = 'block';
+            document.getElementById('copyAnnotationBtn').style.display = 'inline-block';
+        } else {
+            document.getElementById('annotationErrorMessage').textContent = data.error;
+            document.getElementById('annotationError').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        document.getElementById('annotationLoading').style.display = 'none';
+        document.getElementById('annotationErrorMessage').textContent = '{{ t.error_generating_annotation }}: ' + error.message;
+        document.getElementById('annotationError').style.display = 'block';
+    });
+}
+
+function copyAnnotation() {
+    const annotationText = document.getElementById('annotationText').textContent;
+    navigator.clipboard.writeText(annotationText).then(function() {
+        // Show success feedback
+        const btn = document.getElementById('copyAnnotationBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>{{ t.copy_response }}';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

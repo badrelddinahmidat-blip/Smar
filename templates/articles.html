@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.articles }} - {{ t.app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-4 text-primary">
+                <i class="fas fa-newspaper me-3"></i>{{ t.articles }}
+            </h1>
+        </div>
+        
+        <p class="lead text-muted mb-5">
+            {% if lang_data.code == 'ar' %}
+                اكتشف المقالات الأكاديمية والعلمية في مختلف المجالات
+            {% else %}
+                Discover academic and scientific articles across various fields
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h5 mb-0">
+                    <i class="fas fa-link me-2"></i>
+                    {% if lang_data.code == 'ar' %}روابط المقالات{% else %}Articles Links{% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            {% if lang_data.code == 'ar' %}مجلة عصور الجديدة (ASJP){% else %}ASJP Journal{% endif %}
+                        </span>
+                        <a class="btn btn-outline-primary btn-sm" href="https://asjp.cerist.dz/en/PresentationRevue/69" target="_blank" rel="noopener noreferrer">
+                            {% if lang_data.code == 'ar' %}فتح الرابط{% else %}Open Link{% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

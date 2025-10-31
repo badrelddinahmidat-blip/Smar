@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.home }} - {{ t.app_name }}{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row">
+    <div class="col-12 text-center">
+        <h1 class="display-4 text-primary mb-4">
+            <i class="fas fa-book-open me-3"></i>
+            {{ t.welcome_to_library }}
+        </h1>
+        
+        <p class="lead text-muted mb-5">
+            {{ t.sail_through_library }}
+        </p>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title mb-3">
+                    <i class="fas fa-search me-2"></i>{{ t.search }} / Search
+                </h3>
+                <form action="{{ url_for('search') }}" method="GET" class="d-flex">
+                    <input type="text" 
+                           name="q" 
+                           class="form-control form-control-lg me-2" 
+                           placeholder="{{ t.search_books_placeholder }}"
+                           value="{{ request.args.get('q', '') }}">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search me-2"></i>{{ t.search }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_books or all_books %}
+    <!-- Recently Added Books Section -->
+    {% if recent_books %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="h3 mb-4">
+                <i class="fas fa-clock me-2"></i>{{ t.recently_added_books }} / Recently Added Books
+            </h2>
+            <div class="row">
+                {% for book in recent_books %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm book-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3 d-flex align-items-center">
+                                <img src="{{ url_for('serve_upload', filename=book.image_filename) if book.image_filename else url_for('static', filename='placeholder_cover.svg') }}"
+                                     alt="{{ book.title }}" loading="lazy" class="rounded me-2"
+                                     style="width: 40px; height: 40px; object-fit: cover;"
+                                     onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder_cover.svg') }}';">
+                                <h5 class="card-title text-primary mb-0">{{ book.title }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ book.author }}
+                                </h6>
+                            </div>
+                            
+                            <p class="card-text flex-grow-1">
+                                {% if book.description %}
+                                    {{ book.description[:150] }}{% if book.description|length > 150 %}...{% endif %}
+                                {% else %}
+                                    <em class="text-muted">{{ t.no_description }}</em>
+                                {% endif %}
+                            </p>
+                            
+                            <div class="mt-auto">
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ t.added_on }} {{ book.upload_date.split(' ')[0] }}
+                                </small>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('book_detail', book_id=book.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>{{ t.view_details }}
+                                    </a>
+                                    <a href="{{ url_for('download_book', book_id=book.id) }}" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-download me-1"></i>{{ t.download }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Books Section -->
+    {% if all_books %}
+    <div class="row">
+        <div class="col-12">
+            <h2 class="h3 mb-4">
+                <i class="fas fa-list me-2"></i>{{ t.all_books }} / All Books ({{ all_books|length }})
+            </h2>
+            <div class="row">
+                {% for book in all_books %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm book-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3 d-flex align-items-center">
+                                <img src="{{ url_for('serve_upload', filename=book.image_filename) if book.image_filename else url_for('static', filename='placeholder_cover.svg') }}"
+                                     alt="{{ book.title }}" loading="lazy" class="rounded me-2"
+                                     style="width: 40px; height: 40px; object-fit: cover;"
+                                     onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder_cover.svg') }}';">
+                                <h5 class="card-title text-primary mb-0">{{ book.title }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ book.author }}
+                                </h6>
+                            </div>
+                            
+                            <p class="card-text flex-grow-1">
+                                {% if book.description %}
+                                    {{ book.description[:150] }}{% if book.description|length > 150 %}...{% endif %}
+                                {% else %}
+                                    <em class="text-muted">{{ t.no_description }}</em>
+                                {% endif %}
+                            </p>
+                            
+                            <div class="mt-auto">
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ t.added_on }} {{ book.upload_date.split(' ')[0] }}
+                                </small>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('book_detail', book_id=book.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>{{ t.view_details }}
+                                    </a>
+                                    <a href="{{ url_for('download_book', book_id=book.id) }}" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-download me-1"></i>{{ t.download }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% else %}
+    <!-- No Books Available -->
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-book-open fa-5x text-muted mb-4"></i>
+                <h3 class="text-muted">{{ t.no_books_available }}</h3>
+                <p class="text-muted mb-4">
+                    {% if session.logged_in %}
+                        {{ t.start_building }}
+                    {% else %}
+                        {{ t.start_building }}
+                    {% endif %}
+                </p>
+                {% if can_add_book %}
+                <a href="{{ url_for('add_book') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>{{ t.add_first_book }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
