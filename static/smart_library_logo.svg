@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <!-- Outer blue circle -->
+  <circle cx="400" cy="400" r="350" fill="none" stroke="#1a75bb" stroke-width="10"/>
+  
+  <!-- Middle green circle -->
+  <circle cx="400" cy="400" r="280" fill="none" stroke="#8cc63f" stroke-width="10"/>
+  
+  <!-- Inner blue circle with text -->
+  <circle cx="400" cy="400" r="200" fill="#00aeef"/>
+  
+  <!-- Smart Library Text -->
+  <text x="400" y="350" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="white" text-anchor="middle">smart</text>
+  <text x="400" y="450" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="white" text-anchor="middle">library</text>
+  
+  <!-- Orange book icon -->
+  <circle cx="395" cy="200" r="50" fill="#f7941d"/>
+  <rect x="370" y="180" width="50" height="40" fill="white" transform="rotate(-15, 395, 200)"/>
+  
+  <!-- Yellow dot -->
+  <circle cx="650" cy="150" r="30" fill="#ffd100"/>
+  
+  <!-- Green star -->
+  <circle cx="150" cy="600" r="30" fill="#8cc63f"/>
+  <path d="M150 585 L155 600 L170 600 L160 610 L165 625 L150 615 L135 625 L140 610 L130 600 L145 600 Z" fill="white"/>
+  
+  <!-- Pink cursor -->
+  <circle cx="650" cy="550" r="30" fill="#ec008c"/>
+  <path d="M640 540 L660 560 L650 560 L650 570 L640 570 L640 560 L630 560 Z" fill="white"/>
+</svg>
