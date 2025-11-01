@@ -2,16 +2,20 @@
 Smart Library Web Application
 A Flask-based web app for managing and reading digital books with AI-powered search.
 """
-
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, abort, session, jsonify, send_from_directory
 import sqlite3
-import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 from functools import wraps
 import json
+from flask_cors import CORS
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required as flask_login_required, current_user
+from authlib.integrations.flask_client import OAuth
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required as flask_login_required, current_user
+from authlib.integrations.flask_client import OAuth
 try:
     from PIL import Image  # type: ignore
     PIL_AVAILABLE = True
@@ -28,6 +32,22 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-change-in-production')
+CORS(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Initialize OAuth
+oauth = OAuth(app)
+oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID', 'your-google-client-id'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET', 'your-google-client-secret'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'},
+)
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -73,11 +93,11 @@ def get_translations():
             'search_placeholder': 'البحث في الكتب...',
             'welcome_back': 'مرحباً بعودتك،',
             'welcome_to_library': 'مرحباً بك في المكتبة الذكية',
-            'discover_books': 'اكتشف وأدر مجموعة الكتب الرقمية الخاصة بك. تصفح، ابحث، وحمل الكتب بصيغة PDF.',
+            'discover_books': '',
             'add_new_book': 'إضافة كتاب جديد',
             'available_books': 'الكتب المتاحة',
             'no_books_available': 'لا توجد كتب متاحة',
-            'start_building': 'ابدأ في بناء مكتبتك الذكية! أضف كتابك الأول للبدء.',
+            'start_building': '',
             'add_first_book': 'أضف كتابك الأول',
             'view_details': 'عرض التفاصيل',
             'download': 'تحميل',
@@ -149,7 +169,7 @@ def get_translations():
             'error_getting_ai_response': 'خطأ في الحصول على استجابة الذكاء الاصطناعي',
             'error_deleting_file': 'خطأ في حذف الملف',
             'book_deleted_from_database': 'تم حذف الكتاب من قاعدة البيانات، لكن الملف غير موجود.',
-            'built_with_flask': 'تم البناء باستخدام Flask و Bootstrap.',
+            'built_with_flask': '',
             'language': 'اللغة',
             'switch_to_english': 'التبديل إلى الإنجليزية',
             'switch_to_arabic': 'التبديل إلى العربية',
@@ -332,6 +352,10 @@ ALLOWED_ADD_BOOK_EMAIL = 'badrelddinahmidat@gmail.com'
 
 def can_add_books():
     """Return True if the current session user is allowed to add books."""
+    # Check if user is authenticated with Flask-Login
+    if current_user.is_authenticated:
+        return current_user.email == ALLOWED_ADD_BOOK_EMAIL
+    # Check traditional login method
     return session.get('email') == ALLOWED_ADD_BOOK_EMAIL
 
  
@@ -346,11 +370,31 @@ MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB max image size
 # Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# User model for Flask-Login
+class User(UserMixin):
+    def __init__(self, id, email, first_name, last_name):
+        self.id = id
+        self.email = email
+        self.first_name = first_name
+        self.last_name = last_name
+
+@login_manager.user_loader
+def load_user(user_id):
+    if 'user_info' in session and session.get('email') == user_id:
+        user_info = session.get('user_info', {})
+        return User(
+            user_info.get('email', ''),
+            user_info.get('email', ''),
+            user_info.get('first_name', ''),
+            user_info.get('last_name', '')
+        )
+    return None
+
 # Login required decorator
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
+        if not current_user.is_authenticated and not session.get('logged_in'):
             flash(get_translations()['please_log_in'], 'warning')
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
@@ -455,7 +499,6 @@ def add_book():
             return redirect(request.url)
         
         file = request.files['file']
-        image_file = request.files.get('image')
         
         if file.filename == '':
             flash(t['no_file_selected'], 'error')
@@ -470,24 +513,10 @@ def add_book():
                 return redirect(request.url)
             file.seek(0)
 
-        # Validate image if provided
-        image_filename_to_save = None
-        if image_file and image_file.filename:
-            if not allowed_image(image_file.filename):
-                flash(t.get('invalid_image_type', 'Invalid image type. Allowed: PNG, JPG, GIF, WEBP'), 'error')
-                return redirect(request.url)
-            # size check
-            image_file.stream.seek(0, os.SEEK_END)
-            if image_file.stream.tell() > MAX_IMAGE_SIZE:
-                image_file.stream.seek(0)
-                flash(t.get('image_too_large', 'Image file too large'), 'error')
-                return redirect(request.url)
-            image_file.stream.seek(0)
-            # content check
-            if not validate_image_file(image_file.stream):
-                flash(t.get('invalid_image_file', 'Invalid image file'), 'error')
-                return redirect(request.url)
-
+        # Handle cover image upload
+        cover_filename_to_save = None
+        cover_file = request.files.get('cover')
+        
         if file and allowed_file(file.filename):
             # Secure the filename
             filename = secure_filename(file.filename)
@@ -500,18 +529,22 @@ def add_book():
             file_path = os.path.join(UPLOAD_FOLDER, filename)
             file.save(file_path)
             
-            # Save image if provided
-            if image_file and image_file.filename:
-                raw_image_name = secure_filename(image_file.filename)
-                image_filename_to_save = timestamp + raw_image_name
-                image_path = os.path.join(UPLOAD_FOLDER, image_filename_to_save)
-                image_file.save(image_path)
+            # Process cover image if provided
+            if cover_file and cover_file.filename:
+                if allowed_image(cover_file.filename):
+                    # Secure the cover filename
+                    cover_filename = secure_filename(cover_file.filename)
+                    cover_filename_to_save = timestamp + cover_filename
+                    cover_path = os.path.join('static/covers', cover_filename_to_save)
+                    cover_file.save(cover_path)
+                else:
+                    flash(t.get('invalid_image_type', 'Invalid image type. Allowed: PNG, JPG, GIF, WEBP'), 'error')
 
-            # Save book info to database
+            # Save book info to database (with cover image)
             conn = get_db_connection()
             conn.execute(
                 'INSERT INTO books (title, author, description, filename, image_filename) VALUES (?, ?, ?, ?, ?)',
-                (title, author, description, filename, image_filename_to_save)
+                (title, author, description, filename, cover_filename_to_save)
             )
             conn.commit()
             conn.close()
@@ -534,7 +567,7 @@ def book_detail(book_id):
     if book is None:
         abort(404)
     
-    return render_template('book_detail.html', book=book, t=get_translations(), lang_data=get_language_data())
+    return render_template('book_detail.html', book=book, t=get_translations(), lang_data=get_language_data(), can_add_book=can_add_books())
 
 @app.route('/download/<int:book_id>')
 @login_required
@@ -577,12 +610,17 @@ def search():
     ).fetchall()
     conn.close()
     
-    return render_template('search_results.html', books=books, query=query, t=get_translations(), lang_data=get_language_data())
+    return render_template('search_results.html', books=books, query=query, t=get_translations(), lang_data=get_language_data(), can_add_book=can_add_books())
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Login page for users to enter their name and email."""
+    """Login page for users to enter their name and email or sign in with Google."""
     t = get_translations()
+    
+    if request.method == 'GET':
+        return render_template('login.html', t=t, lang_data=get_language_data())
+    
+    # Handle traditional form login as fallback
     if request.method == 'POST':
         first_name = request.form['first_name'].strip()
         last_name = request.form['last_name'].strip()
@@ -598,8 +636,65 @@ def login():
         session['email'] = email
         session['logged_in'] = True
         
+        # Create user object and login with Flask-Login
+        user = User(email, email, first_name, last_name)
+        login_user(user)
+        
+        # Store user info for user_loader
+        session['user_info'] = {
+            'email': email,
+            'first_name': first_name,
+            'last_name': last_name
+        }
+        
         flash(f'{t["welcome_back"]} {first_name} {last_name}!', 'success')
         return redirect(url_for('index'))
+
+@app.route('/login/google')
+def google_login():
+    """Initiate Google OAuth login flow."""
+    redirect_uri = url_for('google_auth', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google')
+def google_auth():
+    """Handle Google OAuth callback."""
+    t = get_translations()
+    try:
+        token = oauth.google.authorize_access_token()
+        user_info = token.get('userinfo')
+        
+        if not user_info:
+            flash(t['login_failed'], 'error')
+            return redirect(url_for('login'))
+        
+        # Extract user information
+        email = user_info.get('email')
+        first_name = user_info.get('given_name', '')
+        last_name = user_info.get('family_name', '')
+        
+        # Store user info in session
+        session['first_name'] = first_name
+        session['last_name'] = last_name
+        session['email'] = email
+        session['logged_in'] = True
+        
+        # Create user object and login with Flask-Login
+        user = User(email, email, first_name, last_name)
+        login_user(user)
+        
+        # Store user info for user_loader
+        session['user_info'] = {
+            'email': email,
+            'first_name': first_name,
+            'last_name': last_name
+        }
+        
+        flash(f'{t["welcome_back"]} {first_name} {last_name}!', 'success')
+        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f'{t["login_failed"]}: {str(e)}', 'error')
+        return redirect(url_for('login'))
     
     return render_template('login.html', t=t, lang_data=get_language_data())
 
@@ -609,6 +704,7 @@ def logout():
     t = get_translations()
     if session.get('logged_in'):
         first_name = session.get('first_name', '')
+        logout_user()  # Flask-Login logout
         session.clear()
         flash(f'{t["goodbye"]} {first_name}! {t["you_have_been_logged_out"]}', 'info')
     else:
@@ -665,6 +761,13 @@ def ai_search():
     if request.method == 'POST':
         query = request.form.get('query', '').strip()
         
+        # Get advanced search parameters
+        author = request.form.get('author', '').strip()
+        category = request.form.get('category', '').strip()
+        year_from = request.form.get('yearFrom', '').strip()
+        year_to = request.form.get('yearTo', '').strip()
+        search_descriptions = request.form.get('searchDescriptions') == 'on'
+        
         if not query:
             flash(t['please_enter_search_query'], 'error')
             return render_template('ai_search.html', t=t, lang_data=get_language_data())
@@ -672,18 +775,41 @@ def ai_search():
         try:
             # Get available books from database for context
             conn = get_db_connection()
-            books = conn.execute('SELECT title, author, description FROM books').fetchall()
+            books = conn.execute('SELECT title, author, description, publication_year FROM books').fetchall()
             conn.close()
+            
+            # Filter books based on advanced search parameters
+            filtered_books = []
+            for book in books:
+                # Apply filters if they exist
+                if author and author.lower() not in (book['author'] or '').lower():
+                    continue
+                if category and category.lower() not in (book['title'] or '').lower() and category.lower() not in (book['description'] or '').lower():
+                    continue
+                if year_from and book.get('publication_year') and int(year_from) > int(book['publication_year']):
+                    continue
+                if year_to and book.get('publication_year') and int(year_to) < int(book['publication_year']):
+                    continue
+                if not search_descriptions and book['description']:
+                    # If not searching descriptions, truncate them
+                    book = dict(book)
+                    book['description'] = book['description'][:100] + "..." if len(book['description']) > 100 else book['description']
+                
+                filtered_books.append(book)
             
             # Create context about available books
             books_context = ""
-            if books:
-                books_context = "Available books in the library:\n"
-                for book in books:
+            if filtered_books:
+                books_context = "Available books in the library matching your criteria:\n"
+                for book in filtered_books:
                     books_context += f"- {book['title']} by {book['author']}"
-                    if book['description']:
-                        books_context += f" ({book['description'][:100]}...)"
+                    if book['description'] and (search_descriptions or not author and not category and not year_from and not year_to):
+                        books_context += f" ({book['description']})"
+                    if book.get('publication_year'):
+                        books_context += f" (Published: {book['publication_year']})"
                     books_context += "\n"
+            else:
+                books_context = "No books found matching your specific criteria.\n"
             
             # Create the prompt for ChatGPT
             system_prompt = f"""You are a helpful AI assistant for a digital library called "Smart Library". 
@@ -695,12 +821,27 @@ def ai_search():
             If the user asks about specific books, check if they're available in the library above.
             Keep responses concise but informative."""
             
+            # Add advanced search context to the user query if parameters are provided
+            enhanced_query = query
+            if author or category or year_from or year_to:
+                enhanced_query = f"{query}\n\nAdditional search criteria:"
+                if author:
+                    enhanced_query += f"\n- Author: {author}"
+                if category:
+                    enhanced_query += f"\n- Category/Subject: {category}"
+                if year_from or year_to:
+                    year_range = f"from {year_from}" if year_from else ""
+                    year_range += f" to {year_to}" if year_to else ""
+                    enhanced_query += f"\n- Publication year: {year_range}"
+                if search_descriptions:
+                    enhanced_query += "\n- Include full book descriptions in search"
+            
             # Make API call to OpenAI
             response = openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": query}
+                    {"role": "user", "content": enhanced_query}
                 ],
                 max_tokens=500,
                 temperature=0.7
@@ -709,7 +850,12 @@ def ai_search():
             ai_response = response.choices[0].message.content
             
             return render_template('ai_search.html', 
-                                 query=query, 
+                                 query=query,
+                                 author=author,
+                                 category=category,
+                                 yearFrom=year_from,
+                                 yearTo=year_to,
+                                 searchDescriptions=search_descriptions,
                                  ai_response=ai_response,
                                  user_logged_in=session.get('logged_in', False),
                                  t=t, lang_data=get_language_data())
@@ -718,7 +864,9 @@ def ai_search():
             flash(f'{t["error_getting_ai_response"]}: {str(e)}', 'error')
             return render_template('ai_search.html', query=query, t=t, lang_data=get_language_data())
     
-    return render_template('ai_search.html', user_logged_in=session.get('logged_in', False), t=t, lang_data=get_language_data())
+    return render_template('ai_search.html', 
+                         user_logged_in=session.get('logged_in', False),
+                         t=t, lang_data=get_language_data())
 
 @app.route('/ai_search_api', methods=['POST'])
 def ai_search_api():
